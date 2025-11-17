@@ -111,17 +111,17 @@ export const deleteNote = async (id: number): Promise<boolean> => {
 
 /* ------------------------- Report Log (from backend) ------------------------- */
 export const getReportedNotesLog = async (): Promise<ReportedNoteLog[]> => {
-  const res = await fetch(`${API_URL}/api/reported-logs`);
+  const res = await fetch(`${API_URL}/api/reported-notes`);
   if (!res.ok) return [];
 
-  const logs = await res.json();
+  const data = await res.json();
 
-  return logs.map((log: any) => ({
-    noteId: log.note_id,
-    noteTitle: log.title,
-    noteSubject: log.subject,
-    noteContent: log.content,
-    reportedAt: new Date(log.reported_at)
+  return data.map((row: any) => ({
+    noteId: row.note_id,
+    noteTitle: row.title,
+    noteSubject: row.subject,
+    noteContent: row.content,
+    reportedAt: new Date(row.reported_at),
   }));
 };
 

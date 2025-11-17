@@ -234,52 +234,47 @@ app.post("/api/notes/:id/like", async (req, res) => {
 
 // Report a note (save log to DB)
 app.post("/api/notes/:id/report", async (req, res) => {
-  if (!pool) return res.status(501).json({ error: "DB not configured" });
-
   try {
-    const noteRes = await pool.query(
-      "SELECT id, title, subject, content FROM notes WHERE id = $1",
-      [req.params.id]
-    );
+    const id = req.params.id;
 
-    if (noteRes.rowCount === 0)
+    // Ensure note exists
+    const noteCheck = await pool.query("SELECT id FROM notes WHERE id=$1", [id]);
+    if (noteCheck.rowCount === 0)
       return res.status(404).json({ error: "Note not found" });
 
-    const note = noteRes.rows[0];
-
-    // Save report log
+    // Insert only if not already reported
     await pool.query(
-      `INSERT INTO reported_logs (note_id, title, subject, content)
-       VALUES ($1, $2, $3, $4)`,
-      [note.id, note.title, note.subject, note.content]
+      `INSERT INTO reported_notes (note_id)
+       VALUES ($1)
+       ON CONFLICT (note_id) DO NOTHING`,
+      [id]
     );
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error("Report error:", err);
     res.status(500).json({ error: "Could not report note" });
   }
 });
 
-// Get all reported logs
-app.get("/api/reported-logs", async (req, res) => {
-  if (!pool) return res.status(501).json({ error: "Database not configured" });
 
+// Get all reported notes
+app.get("/api/reported-notes", async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT id, note_id, title, subject, content, reported_at
-       FROM reported_logs
-       ORDER BY reported_at DESC`
-    );
+    const result = await pool.query(`
+      SELECT rn.note_id, rn.reported_at,
+             n.title, n.subject, n.content
+      FROM reported_notes rn
+      JOIN notes n ON n.id = rn.note_id
+      ORDER BY rn.reported_at ASC;
+    `);
 
     res.json(result.rows);
   } catch (err) {
-    console.error("DB reported logs error:", err);
-    res.status(500).json({ error: "Could not fetch reported logs" });
+    console.error("Fetch reported notes error:", err);
+    res.status(500).json({ error: "Could not fetch reported notes" });
   }
 });
-
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
