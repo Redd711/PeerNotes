@@ -53,7 +53,24 @@ const saveReportLog = (logEntry: ReportedNoteLog) => {
 };
 
 
-const API_URL = process.env.VITE_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+export async function fetchNotes() {
+  const res = await fetch(`${API_URL}/api/notes`);
+  if (!res.ok) throw new Error("Failed to fetch notes");
+  return res.json();
+}
+
+export async function createNote(payload: { title: string; content: string }) {
+  const res = await fetch(`${API_URL}/api/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to create note");
+  return data;
+}
 
 export const moderateContent = async (
     title: string,

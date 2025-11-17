@@ -5,5 +5,7 @@ services:
     buildCommand: npm install
     startCommand: npm start
     envVars:
-      - key: VITE_GEMINI_API_KEY
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
         sync: false

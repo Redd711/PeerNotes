@@ -3,35 +3,60 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import { Pool } from "pg";
 
-dotenv.config({ path: ".env.local" }); // uses your existing key file
+dotenv.config(); // load local vars for dev only (do NOT commit .env.local)
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Enable CORS for Vercel frontend
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://*.vercel.app",
-  ],
-  credentials: true,
-}));
+// Database: expect Render Postgres DATABASE_URL
+const connectionString = process.env.DATABASE_URL || null;
+const pool = connectionString
+  ? new Pool({ connectionString, ssl: { rejectUnauthorized: false } })
+  : null;
+
+async function initDB() {
+  if (!pool) {
+    console.warn("No DATABASE_URL provided - running without DB (dev only).");
+    return;
+  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notes (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+  `);
+}
+initDB().catch((err) => console.error("DB init error:", err));
+
+// CORS - allow local dev + any deployed frontend (tighten later)
+app.use(
+  cors({
+    origin: (origin, cb) => cb(null, true),
+    credentials: true,
+  })
+);
 
 app.use(express.json());
+app.use(bodyParser.json());
 
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
+// Use GEMINI_API_KEY on the server (set this in Render environment)
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_KEY) {
+  console.warn("GEMINI_API_KEY not set. Moderation will fail without it.");
+}
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-app.post("/api/moderate", async (req, res) => {
-  const { title, content } = req.body;
-
+// Moderation helper - returns parsed moderation result { isHarmful, reason }
+async function moderateText(title, content) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
-You are a content moderation AI. 
-Analyze the following text for harmful or unsafe content in both **English and Tagalog** such as:
+You are a content moderation AI. Analyze the following text for harmful or unsafe content in English and Tagalog:
 - self-harm
 - hate speech
 - violence
@@ -57,33 +82,78 @@ Content: ${content}
         },
       ],
       generationConfig: {
-        temperature: 0.2, // keep it focused and deterministic
+        temperature: 0.2,
       },
     });
 
     const output = result.response.text().trim();
+    const jsonStart = output.indexOf("{");
+    const jsonEnd = output.lastIndexOf("}");
+    const jsonString =
+      jsonStart !== -1 && jsonEnd !== -1 ? output.slice(jsonStart, jsonEnd + 1) : "{}";
 
-    // Try to extract valid JSON even if model adds text around it
-    let jsonStart = output.indexOf("{");
-    let jsonEnd = output.lastIndexOf("}");
-    let jsonString =
-      jsonStart !== -1 && jsonEnd !== -1
-        ? output.slice(jsonStart, jsonEnd + 1)
-        : "{}";
-
-    let parsed;
     try {
-      parsed = JSON.parse(jsonString);
-    } catch {
-      parsed = { isHarmful: false, reason: "Could not parse model response." };
+      const parsed = JSON.parse(jsonString);
+      return parsed;
+    } catch (err) {
+      return { isHarmful: false, reason: "Could not parse model response." };
     }
-
-    res.json(parsed);
   } catch (err) {
-    console.error("Gemini moderation error:", err);
-    res
-      .status(500)
-      .json({ isHarmful: false, reason: "Moderation service failed." });
+    console.error("Moderation error:", err);
+    return { isHarmful: false, reason: "Moderation failed." };
+  }
+}
+
+// Create note (moderate first, then save)
+app.post("/api/notes", async (req, res) => {
+  const { title, content } = req.body;
+  if (!title || !content) return res.status(400).json({ error: "Missing title or content" });
+
+  const mod = await moderateText(title, content);
+  if (mod.isHarmful) {
+    return res.status(400).json({ error: "Content flagged", reason: mod.reason });
+  }
+
+  if (!pool) {
+    // fallback to simple in-memory behavior for dev if DB not configured
+    // (You can implement a local store or return not implemented)
+    return res.status(501).json({ error: "Database not configured" });
+  }
+
+  try {
+    const insert = await pool.query(
+      "INSERT INTO notes (title, content) VALUES ($1, $2) RETURNING id, title, content, created_at",
+      [title, content]
+    );
+    res.json(insert.rows[0]);
+  } catch (err) {
+    console.error("DB insert error:", err);
+    res.status(500).json({ error: "Could not save note" });
+  }
+});
+
+// Get list of notes
+app.get("/api/notes", async (req, res) => {
+  if (!pool) return res.status(501).json({ error: "Database not configured" });
+  try {
+    const result = await pool.query("SELECT id, title, content, created_at FROM notes ORDER BY created_at DESC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("DB select error:", err);
+    res.status(500).json({ error: "Could not fetch notes" });
+  }
+});
+
+// Optional: get single note
+app.get("/api/notes/:id", async (req, res) => {
+  if (!pool) return res.status(501).json({ error: "Database not configured" });
+  try {
+    const result = await pool.query("SELECT id, title, content, created_at FROM notes WHERE id = $1", [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("DB select error:", err);
+    res.status(500).json({ error: "Could not fetch note" });
   }
 });
 
