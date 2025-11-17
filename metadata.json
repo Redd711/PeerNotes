@@ -1,0 +1,5 @@
+{
+  "name": "PeerNotes",
+  "description": "An anonymous note-sharing platform. Post, discover, and upvote helpful notes from your peers.",
+  "requestFramePermissions": []
+}

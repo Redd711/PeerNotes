@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PeerNotes | Anonymous Note Sharing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      /* Light theme scrollbars */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9; /* slate-100 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; /* slate-300 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; /* slate-400 */
+      }
+      
+      /* Grid background */
+      body {
+        background-color: #d1fae5; /* emerald-100 */
+        background-image: url("data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M 20 0 L 0 0 0 20' fill='none' stroke='%23a7f3d0' stroke-width='1'/%3e%3c/svg%3e");
+      }
+
+      /* Simple fade-in animation for page transitions */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+
+      /* Basic styling for rendered markdown content (prose) */
+      .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+        color: #1e293b; /* slate-800 */
+        font-weight: 700;
+        margin-top: 1.5em;
+        margin-bottom: 0.8em;
+      }
+      .prose h1 { font-size: 2.25rem; }
+      .prose h2 { font-size: 1.875rem; }
+      .prose h3 { font-size: 1.5rem; }
+      .prose ul, .prose ol {
+        margin-left: 1.5rem;
+        margin-top: 1em;
+        margin-bottom: 1em;
+      }
+      .prose ul { list-style-type: disc; }
+      .prose ol { list-style-type: decimal; }
+      .prose li { margin-top: 0.5em; }
+      .prose p { margin-top: 1em; margin-bottom: 1em; }
+      .prose blockquote {
+        border-left: 4px solid #94a3b8; /* slate-400 */
+        padding-left: 1rem;
+        font-style: italic;
+        color: #475569; /* slate-600 */
+        margin-top: 1.5em;
+        margin-bottom: 1.5em;
+      }
+       .prose code {
+        background-color: #f1f5f9; /* slate-100 */
+        padding: 0.2em 0.4em;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #4c1d95; /* violet-800 */
+      }
+      .prose strong { color: #1e293b; }
+      .prose a { color: #a21caf; text-decoration: underline; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
+  }
+}
+</script>
+</head>
+  <body class="bg-emerald-100 text-slate-800 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
