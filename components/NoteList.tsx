@@ -1,6 +1,6 @@
 import React, { Dispatch, SetStateAction } from 'react';
-import { NoteCard } from './NoteCard';
-import { NoteCardSkeleton } from './NoteCardSkeleton';
+import NoteCard from './NoteCard';
+import NoteCardSkeleton from './NoteCardSkeleton';
 import type { Note } from '../types';
 import '../styles/NoteList.css';
 
