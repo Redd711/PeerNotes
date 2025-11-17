@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import { NoteCard } from './NoteCard';
 import { NoteCardSkeleton } from './NoteCardSkeleton';
 import type { Note } from '../types';
@@ -7,10 +7,22 @@ import '../styles/NoteList.css';
 interface NoteListProps {
     notes: Note[];
     isLoading: boolean;
-    onDeleteNote: (id: number) => void;
+    onLike: (id: number) => Promise<void>;
+    onReport: (id: number) => Promise<void>;
+    onSelectNote: Dispatch<SetStateAction<number | null>>;
+    likedNotes: Set<number>;
+    reportedNotes: Set<number>;
 }
 
-export default function NoteList({ notes, isLoading, onDeleteNote }: NoteListProps) {
+export default function NoteList({ 
+    notes, 
+    isLoading, 
+    onLike, 
+    onReport, 
+    onSelectNote,
+    likedNotes,
+    reportedNotes
+}: NoteListProps) {
     if (isLoading) {
         return (
             <div className="note-list">
@@ -28,8 +40,12 @@ export default function NoteList({ notes, isLoading, onDeleteNote }: NoteListPro
             {notes.map((note) => (
                 <NoteCard 
                     key={note.id} 
-                    note={note} 
-                    onDelete={() => onDeleteNote(note.id)}
+                    note={note}
+                    onLike={() => onLike(note.id)}
+                    onReport={() => onReport(note.id)}
+                    onSelectNote={() => onSelectNote(note.id)}
+                    isLiked={likedNotes.has(note.id)}
+                    isReported={reportedNotes.has(note.id)}
                 />
             ))}
         </div>
