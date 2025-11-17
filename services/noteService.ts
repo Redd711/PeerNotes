@@ -68,95 +68,61 @@ const saveReportLog = (logEntry: ReportedNoteLog) => {
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export async function fetchNotes(): Promise<Note[]> {
-  const res = await fetch(`${API_URL}/api/notes`);
-  if (!res.ok) throw new Error("Failed to fetch notes");
-  return res.json();
+  try {
+    const res = await fetch(`${API_URL}/api/notes`);
+    if (!res.ok) throw new Error("Failed to fetch notes");
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching notes:", error);
+    return [];
+  }
 }
 
-export const moderateContent = async (
-    title: string,
-    content: string
-): Promise<{ isHarmful: boolean; reason?: string }> => {
-    // Moderation now happens server-side on POST /api/notes
-    // This is kept for reference/logging only
-    return { isHarmful: false };
-};
+export const createNote = async (data: { title: string; subject: string; content: string; tags: string[] }): Promise<Note> => {
+  const res = await fetch(`${API_URL}/api/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: data.title, content: data.content }),
+  });
 
-export const createNote = async (data: { title: string; subject: string; content: string; tags: string[]; }): Promise<Note> => {
-    const res = await fetch(`${API_URL}/api/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: data.title, content: data.content }),
-    });
-    
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create note");
-    }
-    
-    return res.json();
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || "Failed to create note");
+
+  return {
+    id: result.id,
+    title: result.title,
+    subject: data.subject,
+    content: result.content,
+    likes: 0,
+    timestamp: new Date(result.created_at),
+    tags: data.tags,
+  };
 };
 
 export const likeNote = async (id: number): Promise<Note | null> => {
-    await simulateDelay(100);
-    const note = notes.find(n => n.id === id);
-    if (note) {
-        note.likes++;
-        saveNotes();
-        return note;
-    }
-    return null;
+  // TODO: Add like endpoint to backend if needed
+  return null;
 };
 
 export const reportNote = async (id: number): Promise<boolean> => {
-    await simulateDelay(200);
-    const note = notes.find(n => n.id === id);
-    if (note) {
-        const logEntry: ReportedNoteLog = {
-            noteId: note.id,
-            noteTitle: note.title,
-            noteContent: note.content,
-            noteSubject: note.subject,
-            reportedAt: new Date(),
-        };
-        saveReportLog(logEntry);
-        console.log(`Note with ID ${id} has been reported and logged.`);
-        return true;
-    }
-    return false;
+  // TODO: Add report endpoint to backend if needed
+  return false;
 };
 
 export const deleteNote = async (id: number): Promise<boolean> => {
-    await simulateDelay(200);
-    const noteIndex = notes.findIndex(n => n.id === id);
-    if (noteIndex > -1) {
-        notes.splice(noteIndex, 1);
-        saveNotes();
-
-        // Also remove all report logs for this note
-        const logs = getReportedNotesLog();
-        const updatedLogs = logs.filter(log => log.noteId !== id);
-        localStorage.setItem('reportedNotesLog', JSON.stringify(updatedLogs));
-
-        return true;
-    }
+  try {
+    const res = await fetch(`${API_URL}/api/notes/${id}`, { method: "DELETE" });
+    return res.ok;
+  } catch (error) {
+    console.error("Error deleting note:", error);
     return false;
+  }
 };
 
 export const getModeratedPostsLog = (): ModeratedPostLog[] => {
-    const stored = localStorage.getItem('moderatedPostsLog');
-    if (!stored) return [];
-    return JSON.parse(stored).map((log: any) => ({
-        ...log,
-        moderatedAt: new Date(log.moderatedAt),
-    }));
+  return [];
 };
 
 export const getReportedNotesLog = (): ReportedNoteLog[] => {
-    const stored = localStorage.getItem('reportedNotesLog');
-    if (!stored) return [];
-    return JSON.parse(stored).map((log: any) => ({
-        ...log,
-        reportedAt: new Date(log.reportedAt),
-    }));
+  return [];
 };

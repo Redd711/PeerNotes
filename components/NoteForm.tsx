@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-
-// This will be available globally from the script tag in index.html
-declare var marked: {
-  parse: (markdownString: string) => string;
-};
+import { marked } from 'marked';
+import '../styles/NoteForm.css';
 
 interface NoteFormProps {
     onPost: (data: { title: string; subject: string; content: string; tags: string[] }) => Promise<void>;

@@ -164,6 +164,22 @@ app.get("/api/notes/:id", async (req, res) => {
   }
 });
 
+// Delete note
+app.delete("/api/notes/:id", async (req, res) => {
+  if (!pool) return res.status(501).json({ error: "Database not configured" });
+  try {
+    const result = await pool.query(
+      "DELETE FROM notes WHERE id = $1 RETURNING id",
+      [req.params.id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DB delete error:", err);
+    res.status(500).json({ error: "Could not delete note" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
