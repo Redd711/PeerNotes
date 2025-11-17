@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import Header from "./components/Header";
-import NoteForm from "./components/NoteForm";
+import { Header } from "./components/Header";
+import { NoteForm } from "./components/NoteForm";
 import NoteList from "./components/NoteList";
-import NoteDetail from "./components/NoteDetail";
-import AdminView from "./components/AdminView";
-import Toast from "./components/Toast";
+import { NoteDetail } from "./components/NoteDetail";
+import { AdminView } from "./components/AdminView";
+import { ToastContainer } from "./components/Toast";
 import {
   getNotes,
   createNote,
@@ -375,7 +375,7 @@ const App: React.FC = () => {
         <p>PeerNotes | Anonymous Note Sharing.</p>
       </footer>
 
-      <Toast toasts={toasts} />
+      <ToastContainer toasts={toasts} />
     </div>
   );
 };

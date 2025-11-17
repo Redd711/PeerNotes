@@ -26,16 +26,3 @@ export const NoteCardSkeleton: React.FC = () => {
         </div>
     );
 };
-
-export default function NoteCardSkeleton() {
-  return (
-    <div className="note-card skeleton">
-      <div className="skeleton-line"></div>
-      <div className="skeleton-line short"></div>
-      <div className="skeleton-lines">
-        <div className="skeleton-line"></div>
-        <div className="skeleton-line"></div>
-      </div>
-    </div>
-  );
-}
