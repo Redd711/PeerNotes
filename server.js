@@ -133,8 +133,15 @@ app.post("/api/notes", async (req, res) => {
 
   try {
     const insert = await pool.query(
-      "INSERT INTO notes (title, subject, content, tags, likes) VALUES ($1, $2, $3, $4, 0) RETURNING id, title, subject, content, tags, likes, created_at",
-      [title, subject, content, tags || []]
+      `INSERT INTO notes (title, subject, content, tags, likes)
+      VALUES ($1, $2, $3, $4::jsonb, 0)
+      RETURNING id, title, subject, content, tags, likes, created_at`,
+      [
+        title,
+        subject,
+        content,
+        JSON.stringify(tags || [])
+      ]
     );
     res.json(insert.rows[0]);
   } catch (err) {
