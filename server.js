@@ -33,7 +33,19 @@ async function initDB() {
 initDB().catch((err) => console.error("DB init error:", err));
 
 // CORS - allow all origins (tighten later in production)
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://peer-notes.vercel.app",
+      "http://localhost:5173"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+app.options("*", cors());
 
 app.use(express.json());
 app.use(bodyParser.json());
