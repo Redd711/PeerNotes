@@ -55,73 +55,34 @@ const saveReportLog = (logEntry: ReportedNoteLog) => {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-export async function fetchNotes() {
+export async function fetchNotes(): Promise<Note[]> {
   const res = await fetch(`${API_URL}/api/notes`);
   if (!res.ok) throw new Error("Failed to fetch notes");
   return res.json();
-}
-
-export async function createNote(payload: { title: string; content: string }) {
-  const res = await fetch(`${API_URL}/api/notes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Failed to create note");
-  return data;
 }
 
 export const moderateContent = async (
     title: string,
     content: string
 ): Promise<{ isHarmful: boolean; reason?: string }> => {
-    try {
-        const response = await fetch(`${API_URL}/api/moderate`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ title, content }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.isHarmful) {
-            saveModerationLog({
-                title,
-                content,
-                reason: result.reason || 'No reason provided.',
-                moderatedAt: new Date(),
-            });
-        }
-
-        return result;
-    } catch (error) {
-        console.error("Error during content moderation:", error);
-        // Fail open: don’t block note creation if backend fails
-        return { isHarmful: false };
-    }
+    // Moderation now happens server-side on POST /api/notes
+    // This is kept for reference/logging only
+    return { isHarmful: false };
 };
 
 export const createNote = async (data: { title: string; subject: string; content: string; tags: string[]; }): Promise<Note> => {
-    await simulateDelay(300);
-    const newNote: Note = {
-        id: nextId++,
-        title: data.title,
-        subject: data.subject.toUpperCase(),
-        content: data.content,
-        likes: 0,
-        timestamp: new Date(),
-        tags: data.tags,
-    };
-    notes.unshift(newNote);
-    saveNotes();
-    return newNote;
+    const res = await fetch(`${API_URL}/api/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: data.title, content: data.content }),
+    });
+    
+    if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create note");
+    }
+    
+    return res.json();
 };
 
 export const likeNote = async (id: number): Promise<Note | null> => {
