@@ -32,6 +32,17 @@ async function initDB() {
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reported_notes (
+      id SERIAL PRIMARY KEY,
+      note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      subject TEXT,
+      content TEXT NOT NULL,
+      reported_at TIMESTAMPTZ DEFAULT now()
+    );
+  `);
 }
 initDB().catch((err) => console.error("DB init error:", err));
 
@@ -75,10 +86,7 @@ You are a content moderation AI. Analyze the following text for harmful or unsaf
 - sexual language
 
 Respond ONLY with a valid JSON object in this exact format:
-{
-  "isHarmful": true/false,
-  "reason": "A brief explanation if harmful"
-}
+{"isHarmful": true/false, "reason": "A brief explanation if harmful"}
 
 Title: ${title}
 Content: ${content}
@@ -224,28 +232,53 @@ app.post("/api/notes/:id/like", async (req, res) => {
   }
 });
 
-// Report a note
+// Report a note (save log to DB)
 app.post("/api/notes/:id/report", async (req, res) => {
-  if (!pool) return res.status(501).json({ error: "Database not configured" });
+  if (!pool) return res.status(501).json({ error: "DB not configured" });
 
   try {
-    const result = await pool.query(
-      "SELECT id FROM notes WHERE id = $1",
+    const noteRes = await pool.query(
+      "SELECT id, title, subject, content FROM notes WHERE id = $1",
       [req.params.id]
     );
 
-    if (result.rowCount === 0)
+    if (noteRes.rowCount === 0)
       return res.status(404).json({ error: "Note not found" });
 
-    // You can log this somewhere or extend schema later
-    console.log(`Note ${req.params.id} was reported.`);
+    const note = noteRes.rows[0];
 
-    return res.json({ success: true });
+    // Save report log
+    await pool.query(
+      `INSERT INTO reported_logs (note_id, title, subject, content)
+       VALUES ($1, $2, $3, $4)`,
+      [note.id, note.title, note.subject, note.content]
+    );
+
+    res.json({ success: true });
   } catch (err) {
     console.error("Report error:", err);
     res.status(500).json({ error: "Could not report note" });
   }
 });
+
+// Get all reported logs
+app.get("/api/reported-logs", async (req, res) => {
+  if (!pool) return res.status(501).json({ error: "Database not configured" });
+
+  try {
+    const result = await pool.query(
+      `SELECT id, note_id, title, subject, content, reported_at
+       FROM reported_logs
+       ORDER BY reported_at DESC`
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("DB reported logs error:", err);
+    res.status(500).json({ error: "Could not fetch reported logs" });
+  }
+});
+
 
 
 app.listen(PORT, () => {

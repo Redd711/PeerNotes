@@ -109,11 +109,26 @@ export const deleteNote = async (id: number): Promise<boolean> => {
   }
 };
 
-/* ------------------------- Moderation Log (Local Only) ------------------------- */
-export const getModeratedPostsLog = (): ModeratedPostLog[] => {
-    return [];
+/* ------------------------- Report Log (from backend) ------------------------- */
+export const getReportedNotesLog = async (): Promise<ReportedNoteLog[]> => {
+  const res = await fetch(`${API_URL}/api/reported-logs`);
+  if (!res.ok) return [];
+
+  const logs = await res.json();
+
+  return logs.map((log: any) => ({
+    noteId: log.note_id,
+    noteTitle: log.title,
+    noteSubject: log.subject,
+    noteContent: log.content,
+    reportedAt: new Date(log.reported_at)
+  }));
 };
 
-export const getReportedNotesLog = (): ReportedNoteLog[] => {
-    return [];
+/* ------------------------- Moderated Log -------------------------
+   This remains local-only because moderation logs are not stored in DB yet
+------------------------------------------------------------------ */
+export const getModeratedPostsLog = (): ModeratedPostLog[] => {
+  return [];
 };
+
