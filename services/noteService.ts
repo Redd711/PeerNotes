@@ -35,10 +35,22 @@ const saveNotes = () => {
 const simulateDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export const getNotes = async (): Promise<Note[]> => {
-    await simulateDelay(500);
-    // Initial sort is handled in App component now
-    return [...notes];
+    const res = await fetch(`${API_URL}/api/notes`);
+    if (!res.ok) throw new Error("Failed to fetch notes");
+    const serverNotes = await res.json();
+
+    // Convert backend structure → frontend structure
+    return serverNotes.map((n: any) => ({
+        id: n.id,
+        title: n.title,
+        content: n.content,
+        subject: "General",     // temporary fallback
+        likes: 0,               // backend does not store likes
+        tags: [],               // backend does not store tags
+        timestamp: new Date(n.created_at)
+    }));
 };
+
 
 const saveModerationLog = (logEntry: ModeratedPostLog) => {
     const logs = getModeratedPostsLog();
