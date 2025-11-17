@@ -22,9 +22,17 @@ export const AdminView: React.FC<AdminViewProps> = ({ onBack, onDeleteNote }) =>
     const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
 
     useEffect(() => {
-        setModeratedLogs(getModeratedPostsLog());
-        setReportedLogs(getReportedNotesLog());
-    }, []);
+    const loadLogs = async () => {
+        const moderated = getModeratedPostsLog();
+        const reported = await getReportedNotesLog();
+
+        setModeratedLogs(moderated);
+        setReportedLogs(reported);
+    };
+
+    loadLogs();
+}, []);
+
 
     const handleRemoveClick = (noteId: number) => {
         if (isDeleting) return;
