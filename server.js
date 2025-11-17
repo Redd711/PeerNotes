@@ -32,11 +32,17 @@ async function initDB() {
 }
 initDB().catch((err) => console.error("DB init error:", err));
 
-// CORS - allow local dev + any deployed frontend (tighten later)
+// CORS - allow Vercel frontend + local dev
 app.use(
   cors({
-    origin: (origin, cb) => cb(null, true),
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://peer-notes.vercel.app'
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
   })
 );
 
