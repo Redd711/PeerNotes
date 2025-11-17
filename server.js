@@ -193,10 +193,6 @@ app.delete("/api/notes/:id", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 // Like a note (increments likes by 1)
 app.post("/api/notes/:id/like", async (req, res) => {
   if (!pool) return res.status(501).json({ error: "Database not configured" });
@@ -219,4 +215,32 @@ app.post("/api/notes/:id/like", async (req, res) => {
     console.error("DB like error:", err);
     res.status(500).json({ error: "Could not like note" });
   }
+});
+
+// Report a note
+app.post("/api/notes/:id/report", async (req, res) => {
+  if (!pool) return res.status(501).json({ error: "Database not configured" });
+
+  try {
+    const result = await pool.query(
+      "SELECT id FROM notes WHERE id = $1",
+      [req.params.id]
+    );
+
+    if (result.rowCount === 0)
+      return res.status(404).json({ error: "Note not found" });
+
+    // You can log this somewhere or extend schema later
+    console.log(`Note ${req.params.id} was reported.`);
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Report error:", err);
+    res.status(500).json({ error: "Could not report note" });
+  }
+});
+
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

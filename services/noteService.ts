@@ -12,10 +12,10 @@ export const getNotes = async (): Promise<Note[]> => {
     return serverNotes.map((n: any) => ({
         id: n.id,
         title: n.title,
-        subject: n.subject || "General",
+        subject: n.subject,
         content: n.content,
-        likes: n.likes ?? 0,
-        tags: n.tags ?? [],
+        likes: n.likes,
+        tags: n.tags,
         timestamp: new Date(n.created_at),
     }));
 };
@@ -81,9 +81,22 @@ export const likeNote = async (id: number): Promise<Note | null> => {
 
 /* ------------------------- Report Note (Future) ------------------------- */
 export const reportNote = async (id: number): Promise<boolean> => {
-    // TODO: backend report route
+  try {
+    const res = await fetch(`${API_URL}/api/notes/${id}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (!res.ok) return false;
+
+    const data = await res.json();
+    return data.success === true;
+  } catch (error) {
+    console.error("Error reporting note:", error);
     return false;
+  }
 };
+
 
 /* ------------------------- Delete Note ------------------------- */
 export const deleteNote = async (id: number): Promise<boolean> => {
