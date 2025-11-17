@@ -35,7 +35,7 @@ export const createNote = async (data: {
             title: data.title,
             subject: data.subject,
             content: data.content,
-            tags: data.tags
+            tags: Array.isArray(data.tags) ? data.tags : [data.tags].filter(Boolean),
         }),
     });
 
