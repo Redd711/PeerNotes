@@ -25,7 +25,10 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS notes (
       id SERIAL PRIMARY KEY,
       title TEXT NOT NULL,
+      subject TEXT,
       content TEXT NOT NULL,
+      tags JSONB DEFAULT '[]',
+      likes INTEGER DEFAULT 0,
       created_at TIMESTAMPTZ DEFAULT now()
     );
   `);
@@ -113,8 +116,11 @@ Content: ${content}
 
 // Create note (moderate first, then save)
 app.post("/api/notes", async (req, res) => {
-  const { title, content } = req.body;
-  if (!title || !content) return res.status(400).json({ error: "Missing title or content" });
+  const { title, subject, content, tags } = req.body;
+
+  if (!title || !content) {
+    return res.status(400).json({ error: "Missing title or content" });
+  }
 
   const mod = await moderateText(title, content);
   if (mod.isHarmful) {
@@ -122,15 +128,13 @@ app.post("/api/notes", async (req, res) => {
   }
 
   if (!pool) {
-    // fallback to simple in-memory behavior for dev if DB not configured
-    // (You can implement a local store or return not implemented)
     return res.status(501).json({ error: "Database not configured" });
   }
 
   try {
     const insert = await pool.query(
-      "INSERT INTO notes (title, content) VALUES ($1, $2) RETURNING id, title, content, created_at",
-      [title, content]
+      "INSERT INTO notes (title, subject, content, tags, likes) VALUES ($1, $2, $3, $4, 0) RETURNING id, title, subject, content, tags, likes, created_at",
+      [title, subject, content, tags || []]
     );
     res.json(insert.rows[0]);
   } catch (err) {
@@ -142,8 +146,11 @@ app.post("/api/notes", async (req, res) => {
 // Get list of notes
 app.get("/api/notes", async (req, res) => {
   if (!pool) return res.status(501).json({ error: "Database not configured" });
+
   try {
-    const result = await pool.query("SELECT id, title, content, created_at FROM notes ORDER BY created_at DESC");
+    const result = await pool.query(
+      "SELECT id, title, subject, content, tags, likes, created_at FROM notes ORDER BY created_at DESC"
+    );
     res.json(result.rows);
   } catch (err) {
     console.error("DB select error:", err);
@@ -151,12 +158,18 @@ app.get("/api/notes", async (req, res) => {
   }
 });
 
-// Optional: get single note
+// Get single note
 app.get("/api/notes/:id", async (req, res) => {
   if (!pool) return res.status(501).json({ error: "Database not configured" });
+
   try {
-    const result = await pool.query("SELECT id, title, content, created_at FROM notes WHERE id = $1", [req.params.id]);
-    if (result.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    const result = await pool.query(
+      "SELECT id, title, subject, content, tags, likes, created_at FROM notes WHERE id = $1", [req.params.id]
+    );
+
+    if (result.rowCount === 0) 
+      return res.status(404).json({ error: "Not found" });
+
     res.json(result.rows[0]);
   } catch (err) {
     console.error("DB select error:", err);
@@ -182,4 +195,28 @@ app.delete("/api/notes/:id", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Like a note (increments likes by 1)
+app.post("/api/notes/:id/like", async (req, res) => {
+  if (!pool) return res.status(501).json({ error: "Database not configured" });
+
+  try {
+    const result = await pool.query(
+      `UPDATE notes
+       SET likes = likes + 1
+       WHERE id = $1
+       RETURNING id, title, subject, content, tags, likes, created_at`,
+      [req.params.id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("DB like error:", err);
+    res.status(500).json({ error: "Could not like note" });
+  }
 });
