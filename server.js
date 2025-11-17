@@ -7,8 +7,19 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" }); // uses your existing key file
 
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const PORT = process.env.PORT || 8080;
+
+// Enable CORS for Vercel frontend
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://*.vercel.app",
+  ],
+  credentials: true,
+}));
+
+app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
 
@@ -76,4 +87,6 @@ Content: ${content}
   }
 });
 
-app.listen(8080, () => console.log("✅ Gemini backend running at http://localhost:8080"));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

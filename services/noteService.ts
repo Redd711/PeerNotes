@@ -53,12 +53,14 @@ const saveReportLog = (logEntry: ReportedNoteLog) => {
 };
 
 
+const API_URL = process.env.VITE_API_URL || 'http://localhost:8080';
+
 export const moderateContent = async (
     title: string,
     content: string
 ): Promise<{ isHarmful: boolean; reason?: string }> => {
     try {
-        const response = await fetch("http://localhost:8080/api/moderate", {
+        const response = await fetch(`${API_URL}/api/moderate`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
