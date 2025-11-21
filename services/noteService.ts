@@ -40,7 +40,17 @@ export const createNote = async (data: {
     });
 
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || "Failed to create note");
+    if (!res.ok) { 
+      const errorMsg = result.error || "Failed to create note";
+      const reasonMsg = result.reason;
+
+      let fullMessage = errorMsg;
+        if (reasonMsg) {
+            fullMessage = `${errorMsg}: ${reasonMsg}`; 
+        }
+
+      throw new Error(fullMessage);
+    }
 
     return {
         id: result.id,
