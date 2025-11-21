@@ -269,7 +269,7 @@ app.get("/api/reported-notes", async (req, res) => {
              n.title, n.subject, n.content
       FROM reported_notes rn
       JOIN notes n ON n.id = rn.note_id
-      ORDER BY rn.reported_at ASC;
+      ORDER BY rn.reported_at DESC;
     `);
 
     res.json(result.rows);
