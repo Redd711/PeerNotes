@@ -84,9 +84,12 @@ You are a content moderation AI. Analyze the following text for harmful or unsaf
 - harassment
 - explicit or illegal material
 - sexual language
+- profanity, foul language, or slurs
 
 Respond ONLY with a valid JSON object in this exact format:
-{"isHarmful": true/false, "reason": "A brief explanation if harmful"}
+{"isHarmful": true/false, "reason": "A brief explanation if harmful. "}
+
+**Keep the reason short and concise (under 10 words).**
 
 Title: ${title}
 Content: ${content}
