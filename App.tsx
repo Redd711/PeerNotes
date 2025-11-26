@@ -371,9 +371,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      // ADD THIS BLOCK
-
-      <footer className="bg-white border-t border-slate-200 text-slate-700 py-10 mt-12">
+      <footer className="min-h-screen font-sans text-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
             {/* Footer Message */}
