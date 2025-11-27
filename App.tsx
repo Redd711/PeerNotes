@@ -331,15 +331,20 @@ const App: React.FC = () => {
                         {stats && (
                             <div className="max-w-xl mx-auto mt-6 px-4 py-3 bg-white/70 backdrop-blur-sm rounded-lg shadow border border-slate-200/50">
                                 <div className="text-center text-slate-600 font-semibold mb-2">Platform Statistics</div>
-                                <div className="flex justify-around text-sm font-medium">
+                                
+                                {/* 🛑 FIX APPLIED HERE: Replaced 'justify-around' with 'justify-center' and added 'gap-10' */}
+                                <div className="flex justify-center gap-10 text-sm font-medium">
+                                    
                                     <p className="flex flex-col items-center">
                                         <span className="text-2xl font-bold text-teal-600">{stats.visibleNotes}</span>
                                         <span className="mt-1">Visible Notes</span>
                                     </p>
+                                    
                                     <p className="flex flex-col items-center">
                                         <span className="text-2xl font-bold text-fuchsia-600">{stats.adminRemoved}</span>
                                         <span className="mt-1">Admin Reported</span>
                                     </p>
+                                    
                                     <p className="flex flex-col items-center">
                                         <span className="text-2xl font-bold text-rose-600">{stats.autoModerated}</span>
                                         <span className="mt-1">Auto Moderated</span>
