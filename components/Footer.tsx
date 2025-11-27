@@ -4,18 +4,19 @@ import { faGithub, faLinkedinIn, faInstagram, faFacebookF } from '@fortawesome/f
 
 export const Footer: React.FC = () => {
     return (
-        <footer className="bg-white border-t border-fuchsia-200 text-slate-700 py-10 mt-12">
+        // 🛑 CHANGES HERE 🛑
+        <footer className="bg-slate-100/80 backdrop-blur-lg border-t border-slate-300/50 text-slate-700 py-10 mt-12">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
                 {/* Footer Message */}
                 <div className="mb-6">
                     <h1 className="text-lg font-semibold mb-3">
                         You made it to the end — nice! 
-                        <a href="#top" className="text-fuchsia-600 hover:text-fuchsia-800 transition-colors underline ml-1">
-                            Click my name to zoom back up.
+                        <a href="#top" className="text-fuchsia-600 hover:text-fuchsia-800 transition-colors">
+                            Click this to go back to the top. 
                         </a> 
-                        Got something on your mind? Feel free to connect with me!
-                    </h1>
+                        Want to report a bug or suggest a feature? Feel free to reach out!
+                        </h1>
                 </div>
 
                 {/* Footer Actions (Contact Me Button) */}
