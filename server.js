@@ -43,6 +43,21 @@ async function initDB() {
       reported_at TIMESTAMPTZ DEFAULT now()
     );
   `);
+
+  // NEW: Table to hold a single counter for auto-moderated notes
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS moderation_stats (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      rejected_count INTEGER DEFAULT 0
+    );
+  `);
+
+  // NEW: Ensure the single counter row exists (Upsert logic for the counter)
+  await pool.query(`
+    INSERT INTO moderation_stats (id, rejected_count) 
+    VALUES (1, 0)
+    ON CONFLICT (id) DO NOTHING;
+  `);
 }
 initDB().catch((err) => console.error("DB init error:", err));
 
@@ -135,6 +150,18 @@ app.post("/api/notes", async (req, res) => {
 
   const mod = await moderateText(title, content);
   if (mod.isHarmful) {
+    // NEW: Increment the counter for auto-moderated notes
+    if (pool) {
+      try {
+        await pool.query(`
+          UPDATE moderation_stats 
+          SET rejected_count = rejected_count + 1 
+          WHERE id = 1;
+        `);
+      } catch (logErr) {
+        console.error("DB Moderation Increment Error:", logErr);
+      }
+    }
     return res.status(400).json({ error: "Content flagged", reason: mod.reason });
   }
 
@@ -218,9 +245,9 @@ app.post("/api/notes/:id/like", async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE notes
-       SET likes = likes + 1
-       WHERE id = $1
-       RETURNING id, title, subject, content, tags, likes, created_at`,
+      SET likes = likes + 1
+      WHERE id = $1
+      RETURNING id, title, subject, content, tags, likes, created_at`,
       [req.params.id]
     );
 
@@ -243,13 +270,13 @@ app.post("/api/notes/:id/report", async (req, res) => {
     // Ensure note exists
     const noteCheck = await pool.query("SELECT id FROM notes WHERE id=$1", [id]);
     if (noteCheck.rowCount === 0)
-      return res.status(404).json({ error: "Note not found" });
+      return res.status(404).json({ error: "Not found" });
 
     // Insert only if not already reported
     await pool.query(
       `INSERT INTO reported_notes (note_id)
-       VALUES ($1)
-       ON CONFLICT (note_id) DO NOTHING`,
+      VALUES ($1)
+      ON CONFLICT (note_id) DO NOTHING`,
       [id]
     );
 
@@ -278,6 +305,41 @@ app.get("/api/reported-notes", async (req, res) => {
     res.status(500).json({ error: "Could not fetch reported notes" });
   }
 });
+
+// NEW: Route to get platform statistics
+app.get("/api/stats", async (req, res) => {
+    if (!pool) return res.status(501).json({ error: "Database not configured" });
+
+    try {
+        // 1. Total Notes Visible
+        const totalNotesResult = await pool.query("SELECT COUNT(*) AS total_notes FROM notes");
+        const visibleNotes = parseInt(totalNotesResult.rows[0].total_notes);
+
+        // 2. Total Notes Removed by Admin (Total distinct notes ever reported)
+        // Note: This counts reported notes. If a note is reported and then removed,
+        // it remains in reported_notes, so this is an approximation of admin-flagged content.
+        const adminRemovedResult = await pool.query(`
+            SELECT COUNT(DISTINCT note_id) AS removed_count
+            FROM reported_notes;
+        `);
+        const adminRemoved = parseInt(adminRemovedResult.rows[0].removed_count);
+
+        // 3. Total Notes Automatically Moderated (from the new logging table)
+        const autoModeratedResult = await pool.query("SELECT rejected_count FROM moderation_stats WHERE id = 1");
+        // Use optional chaining and default to 0 for robustness
+        const autoModerated = parseInt(autoModeratedResult.rows[0]?.rejected_count || 0);
+
+        res.json({
+            visibleNotes,
+            adminRemoved,
+            autoModerated,
+        });
+    } catch (err) {
+        console.error("Fetch stats error:", err);
+        res.status(500).json({ error: "Could not fetch platform statistics" });
+    }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

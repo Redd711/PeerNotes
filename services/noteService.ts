@@ -2,6 +2,14 @@ import type { Note, ModeratedPostLog, ReportedNoteLog } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
+/* ------------------------- Platform Statistics Interface ------------------------- */
+export interface PlatformStats {
+    visibleNotes: number;
+    adminRemoved: number;
+    autoModerated: number;
+}
+// ----------------------------------------------------------------------------------
+
 /* ------------------------- Fetch All Notes ------------------------- */
 export const getNotes = async (): Promise<Note[]> => {
     const res = await fetch(`${API_URL}/api/notes`);
@@ -41,15 +49,15 @@ export const createNote = async (data: {
 
     const result = await res.json();
     if (!res.ok) { 
-      const errorMsg = result.error || "Failed to create note";
-      const reasonMsg = result.reason;
+        const errorMsg = result.error || "Failed to create note";
+        const reasonMsg = result.reason;
 
-      let fullMessage = errorMsg;
+        let fullMessage = errorMsg;
         if (reasonMsg) {
             fullMessage = `${errorMsg}: ${reasonMsg}`; 
         }
 
-      throw new Error(fullMessage);
+        throw new Error(fullMessage);
     }
 
     return {
@@ -65,80 +73,96 @@ export const createNote = async (data: {
 
 /* ------------------------- Like Note (Future) ------------------------- */
 export const likeNote = async (id: number): Promise<Note | null> => {
-  try {
-    const res = await fetch(`${API_URL}/api/notes/${id}/like`, {
-      method: "POST"
-    });
+    try {
+        const res = await fetch(`${API_URL}/api/notes/${id}/like`, {
+            method: "POST"
+        });
 
-    if (!res.ok) return null;
+        if (!res.ok) return null;
 
-    const updated = await res.json();
+        const updated = await res.json();
 
-    return {
-      id: updated.id,
-      title: updated.title,
-      subject: updated.subject,
-      content: updated.content,
-      likes: updated.likes,
-      tags: updated.tags ?? [],
-      timestamp: new Date(updated.created_at),
-    };
-  } catch (error) {
-    console.error("Error liking note:", error);
-    return null;
-  }
+        return {
+            id: updated.id,
+            title: updated.title,
+            subject: updated.subject,
+            content: updated.content,
+            likes: updated.likes,
+            tags: updated.tags ?? [],
+            timestamp: new Date(updated.created_at),
+        };
+    } catch (error) {
+        console.error("Error liking note:", error);
+        return null;
+    }
 };
 
 /* ------------------------- Report Note (Future) ------------------------- */
 export const reportNote = async (id: number): Promise<boolean> => {
-  try {
-    const res = await fetch(`${API_URL}/api/notes/${id}/report`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
+    try {
+        const res = await fetch(`${API_URL}/api/notes/${id}/report`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        });
 
-    if (!res.ok) return false;
+        if (!res.ok) return false;
 
-    const data = await res.json();
-    return data.success === true;
-  } catch (error) {
-    console.error("Error reporting note:", error);
-    return false;
-  }
+        const data = await res.json();
+        return data.success === true;
+    } catch (error) {
+        console.error("Error reporting note:", error);
+        return false;
+    }
 };
 
 
 /* ------------------------- Delete Note ------------------------- */
 export const deleteNote = async (id: number): Promise<boolean> => {
-  try {
-    const res = await fetch(`${API_URL}/api/notes/${id}`, { method: "DELETE" });
-    return res.ok;
-  } catch (error) {
-    console.error("Error deleting note:", error);
-    return false;
-  }
+    try {
+        const res = await fetch(`${API_URL}/api/notes/${id}`, { method: "DELETE" });
+        return res.ok;
+    } catch (error) {
+        console.error("Error deleting note:", error);
+        return false;
+    }
 };
 
 /* ------------------------- Report Log (from backend) ------------------------- */
 export const getReportedNotesLog = async (): Promise<ReportedNoteLog[]> => {
-  const res = await fetch(`${API_URL}/api/reported-notes`);
-  if (!res.ok) return [];
+    const res = await fetch(`${API_URL}/api/reported-notes`);
+    if (!res.ok) return [];
 
-  const data = await res.json();
+    const data = await res.json();
 
-  return data.map((row: any) => ({
-    noteId: row.note_id,
-    noteTitle: row.title,
-    noteSubject: row.subject,
-    noteContent: row.content,
-    reportedAt: new Date(row.reported_at),
-  }));
+    return data.map((row: any) => ({
+        noteId: row.note_id,
+        noteTitle: row.title,
+        noteSubject: row.subject,
+        noteContent: row.content,
+        reportedAt: new Date(row.reported_at),
+    }));
 };
 
-/* ------------------------- Moderated Log -------------------------
-   This remains local-only because moderation logs are not stored in DB yet
+/* ------------------------- Fetch Platform Statistics ------------------------- */
+export const getPlatformStats = async (): Promise<PlatformStats> => {
+    const res = await fetch(`${API_URL}/api/stats`);
+    if (!res.ok) {
+        // Return zeros if API call fails
+        console.error("Failed to fetch platform statistics from API.");
+        return { visibleNotes: 0, adminRemoved: 0, autoModerated: 0 };
+    }
+    const data = await res.json();
+    return {
+        visibleNotes: data.visibleNotes,
+        adminRemoved: data.adminRemoved,
+        autoModerated: data.autoModerated,
+    };
+};
+// ------------------------------------------------------------------
+
+/* ------------------------- Moderated Log (Local Only) -------------------------
+   This remains local-only as the full logs are no longer stored in DB 
 ------------------------------------------------------------------ */
 export const getModeratedPostsLog = (): ModeratedPostLog[] => {
-  return [];
+    return [];
 };
-

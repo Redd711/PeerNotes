@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Header } from "./components/Header";
-import { Footer } from "./components/Footer"; // 👈 New Footer Component
+import { Footer } from "./components/Footer";
 import { NoteForm } from "./components/NoteForm";
 import NoteList from "./components/NoteList";
 import { NoteDetail } from "./components/NoteDetail";
@@ -8,10 +8,13 @@ import { AdminView } from "./components/AdminView";
 import { ToastContainer } from "./components/Toast";
 import {
     getNotes,
-    createNote, // 👈 Moderation error handling is fixed inside this service function
+    createNote,
     likeNote as serviceLikeNote,
     reportNote as serviceReportNote,
     deleteNote as serviceDeleteNote,
+    // 🛑 NEW IMPORT: Import the stats fetching function and type
+    getPlatformStats,
+    PlatformStats,
 } from "./services/noteService";
 import type { Note, Toast as ToastType } from "./types";
 import "./App.css";
@@ -70,6 +73,9 @@ const App: React.FC = () => {
     const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
     const [toasts, setToasts] = useState<ToastType[]>([]);
     const [currentView, setCurrentView] = useState<View>("main");
+    
+    // 🛑 NEW STATE: To hold platform statistics
+    const [stats, setStats] = useState<PlatformStats | null>(null); 
 
     const [likedNotes, setLikedNotes] = useState<Set<number>>(() => {
         try {
@@ -103,9 +109,21 @@ const App: React.FC = () => {
         }
     }, []);
 
+    // 🛑 NEW EFFECT: Fetch platform statistics
+    const fetchStats = useCallback(async () => {
+        try {
+            const fetchedStats = await getPlatformStats();
+            setStats(fetchedStats);
+        } catch (err) {
+            console.error("Failed to load stats:", err);
+            setStats(null); 
+        }
+    }, []);
+
     useEffect(() => {
         fetchAndSetNotes();
-    }, [fetchAndSetNotes]);
+        fetchStats(); // Fetch stats on initial load
+    }, [fetchAndSetNotes, fetchStats]);
 
     // persist like/report selections to localStorage (UI-only)
     useEffect(() => {
@@ -157,12 +175,16 @@ const App: React.FC = () => {
             setSelectedTag("All");
             setSortBy("newest");
             addToast("Note posted.");
+            
+            fetchStats(); // 🛑 Re-fetch stats after successful post
         } catch (err: any) {
             console.error("Failed to post note:", err);
             // If backend returns JSON error, show it (error message now includes reason from service)
             const message = err?.message || "Failed to post note.";
             setError(message);
             addToast(message);
+            
+            fetchStats(); // 🛑 Re-fetch stats after failed post (to update moderation count)
         }
     };
 
@@ -200,6 +222,7 @@ const App: React.FC = () => {
             await serviceReportNote(id);
             setReportedNotes((prev) => new Set(prev).add(id));
             addToast("Note reported.");
+            fetchStats(); // 🛑 Re-fetch stats after report (updates removed count)
         } catch (err) {
             console.error("Report failed:", err);
             addToast("Failed to report note.");
@@ -213,6 +236,7 @@ const App: React.FC = () => {
             if (success) {
                 setNotes((prev) => prev.filter((n) => n.id !== id));
                 addToast("Note removed successfully.");
+                fetchStats(); // 🛑 Re-fetch stats after delete (updates visible count)
                 return true;
             } else {
                 addToast("Failed to remove note.");
@@ -302,6 +326,31 @@ const App: React.FC = () => {
                             availableTags={availableTags.filter((t) => t !== "All")}
                             subjectNames={subjectNames}
                         />
+                        
+                        {/* 🛑 NEW JSX: Display Platform Statistics 🛑 */}
+                        {stats && (
+                            <div className="max-w-xl mx-auto mt-6 px-4 py-3 bg-white/70 backdrop-blur-sm rounded-lg shadow border border-slate-200/50">
+                                <div className="text-center text-slate-600 font-semibold mb-2">
+                                    Platform Statistics
+                                </div>
+                                <div className="flex justify-around text-sm font-medium">
+                                    <p className="flex flex-col items-center">
+                                        <span className="text-2xl font-bold text-teal-600">{stats.visibleNotes}</span>
+                                        <span className="mt-1">Visible Notes</span>
+                                    </p>
+                                    <p className="flex flex-col items-center">
+                                        <span className="text-2xl font-bold text-fuchsia-600">{stats.adminRemoved}</span>
+                                        <span className="mt-1">Admin Reported</span>
+                                    </p>
+                                    <p className="flex flex-col items-center">
+                                        <span className="text-2xl font-bold text-rose-600">{stats.autoModerated}</span>
+                                        <span className="mt-1">Auto Moderated</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        {/* 🛑 END NEW JSX 🛑 */}
+
                         {error && <p className="text-center text-red-500 mt-4">{error}</p>}
 
                         <div className="mt-12">
@@ -373,7 +422,7 @@ const App: React.FC = () => {
                 )}
             </main>
 
-            {/* 🛑 FIX: Use the imported, modular Footer component */}
+            {/* Use the imported, modular Footer component */}
             <Footer />
 
             <ToastContainer toasts={toasts} />
