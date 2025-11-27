@@ -330,9 +330,7 @@ const App: React.FC = () => {
                         {/* 🛑 NEW JSX: Display Platform Statistics 🛑 */}
                         {stats && (
                             <div className="max-w-xl mx-auto mt-6 px-4 py-3 bg-white/70 backdrop-blur-sm rounded-lg shadow border border-slate-200/50">
-                                <div className="text-center text-slate-600 font-semibold mb-2">
-                                    Platform Statistics
-                                </div>
+                                <div className="text-center text-slate-600 font-semibold mb-2">Platform Statistics</div>
                                 <div className="flex justify-around text-sm font-medium">
                                     <p className="flex flex-col items-center">
                                         <span className="text-2xl font-bold text-teal-600">{stats.visibleNotes}</span>
