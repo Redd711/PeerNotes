@@ -332,28 +332,26 @@ const App: React.FC = () => {
                             <div className="max-w-xl mx-auto mt-6 px-4 py-3 bg-white/70 backdrop-blur-sm rounded-lg shadow border border-slate-200/50">
                                 <div className="text-center text-slate-600 font-semibold mb-2">Platform Statistics</div>
                                 
-                                {/* 🛑 FIX: Use justify-between on a controlled width container. 
-                                      We'll wrap the statistics in another div to force the inner content to be centered
-                                      and compact. This is the simplest fix without complex component restructuring. 
+                                {/* 🛑 FINAL FIX: Using 'w-full' and 'justify-around' on the parent 
+                                  and applying 'flex-1' to the children to guarantee equal column widths. 
+                                  This pushes the visual weight out evenly.
                                 */}
-                                <div className="flex justify-center"> {/* Centering the inner block */}
-                                    <div className="flex justify-between w-full max-w-xs text-sm font-medium"> 
-                                        
-                                        <p className="flex flex-col items-center">
-                                            <span className="text-2xl font-bold text-teal-600">{stats.visibleNotes}</span>
-                                            <span className="mt-1">Visible Notes</span>
-                                        </p>
-                                        
-                                        <p className="flex flex-col items-center">
-                                            <span className="text-2xl font-bold text-fuchsia-600">{stats.adminRemoved}</span>
-                                            <span className="mt-1">Admin Reported</span>
-                                        </p>
-                                        
-                                        <p className="flex flex-col items-center">
-                                            <span className="text-2xl font-bold text-rose-600">{stats.autoModerated}</span>
-                                            <span className="mt-1">Auto Moderated</span>
-                                        </p>
-                                    </div>
+                                <div className="flex w-full justify-around text-sm font-medium px-4"> 
+                                    
+                                    <p className="flex flex-col items-center flex-1">
+                                        <span className="text-2xl font-bold text-teal-600">{stats.visibleNotes}</span>
+                                        <span className="mt-1">Visible Notes</span>
+                                    </p>
+                                    
+                                    <p className="flex flex-col items-center flex-1">
+                                        <span className="text-2xl font-bold text-fuchsia-600">{stats.adminRemoved}</span>
+                                        <span className="mt-1">Admin Reported</span>
+                                    </p>
+                                    
+                                    <p className="flex flex-col items-center flex-1">
+                                        <span className="text-2xl font-bold text-rose-600">{stats.autoModerated}</span>
+                                        <span className="mt-1">Auto Moderated</span>
+                                    </p>
                                 </div>
                             </div>
                         )}
