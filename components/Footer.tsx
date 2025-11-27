@@ -4,7 +4,7 @@ import { faGithub, faLinkedinIn, faInstagram, faFacebookF } from '@fortawesome/f
 
 export const Footer: React.FC = () => {
     return (
-        <footer className="bg-slate-100/80 backdrop-blur-lg border-b border-slate-300/50">
+        <footer className="bg-white border-t border-fuchsia-200 text-slate-700 py-10 mt-12">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
                 {/* Footer Message */}
