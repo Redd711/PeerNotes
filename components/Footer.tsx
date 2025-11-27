@@ -11,12 +11,12 @@ export const Footer: React.FC = () => {
                 {/* Footer Message */}
                 <div className="mb-6">
                     <h1 className="text-lg font-semibold mb-3">
-                        You made it to the end — nice! 
+                        You made it to the end — nice!&nbsp;
                         <a href="#top" className="text-fuchsia-600 hover:text-fuchsia-800 transition-colors">
-                            Click this to go back to the top. 
+                            Click this to go back to the top.
                         </a> 
-                        Want to report a bug or suggest a feature? Feel free to reach out!
-                        </h1>
+                        &nbsp;Want to report a bug or suggest a feature? Feel free to reach out!
+                    </h1>
                 </div>
 
                 {/* Footer Actions (Contact Me Button) */}
